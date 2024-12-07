@@ -9,15 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^1.0.6",
     "@ai-sdk/openai": "^1.0.7",
     "@assistant-ui/react": "^0.7.9",
     "@assistant-ui/react-ai-sdk": "^0.7.3",
+    "@proofgeist/fmdapi": "^4.2.1",
     "ai": "^4.0.13",
     "nanoid": "^5.0.9",
     "next": "15.0.4",
     "ollama-ai-provider": "^1.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
