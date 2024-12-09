@@ -4,11 +4,28 @@ import {
   type AppendMessage,
   AssistantRuntimeProvider,
 } from "@assistant-ui/react";
-import { useVercelRSCRuntime } from "@assistant-ui/react-ai-sdk";
+import {
+  useVercelRSCRuntime,
+  VercelRSCMessage,
+} from "@assistant-ui/react-ai-sdk";
 import { useActions, useUIState } from "ai/rsc";
 import { nanoid } from "nanoid";
 
-import type { AI } from "./actions";
+import type { AI, UIState } from "./actions";
+
+const convertMessage = (message: UIState[number]): VercelRSCMessage => {
+  return {
+    id: nanoid(),
+    role: message.role,
+    display: (
+      <>
+        {message.spinner}
+        {message.display}
+        {message.attachments}
+      </>
+    ),
+  };
+};
 
 export function OllamaRuntimeProvider({
   children,
@@ -29,11 +46,16 @@ export function OllamaRuntimeProvider({
     ]);
 
     const message = await continueConversation(input);
+    console.log("message", message);
 
     setMessages((currentConversation) => [...currentConversation, message]);
   };
 
-  const runtime = useVercelRSCRuntime({ messages, onNew });
+  const runtime = useVercelRSCRuntime({
+    messages,
+    onNew,
+    convertMessage,
+  });
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
