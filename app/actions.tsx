@@ -71,7 +71,6 @@ export async function continueConversation(
     system:
       "You are an AI assistant that retrieves student information from a database and answers questions about them.",
     messages: [...aiState.get()],
-    temperature: 0.2,
     tools: {
       getStudentTool,
     },
