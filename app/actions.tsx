@@ -7,14 +7,12 @@ import {
   getMutableAIState,
   streamUI,
 } from "ai/rsc";
-import { createOllama } from "ollama-ai-provider";
+import { createOllama, ollama } from "ollama-ai-provider";
 import { ReactNode } from "react";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { groq } from "@ai-sdk/groq";
-import {
-  StudentLayout,
-} from "@/config/schema/client/index";
+import { StudentLayout } from "@/config/schema/client/index";
 import { streamText, tool } from "ai";
 
 export interface ServerMessage {
@@ -46,31 +44,43 @@ export async function continueConversation(
 
   const messageStream = createStreamableUI(null);
 
-  const ollama = createOllama({
-    baseURL: "https://api.vultrinference.com/v1/",
-    headers: {
-      Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
-    },
-  });
+  // const ollama = createOllama({
+  //   baseURL: "https://api.vultrinference.com/v1/",
+  //   headers: {
+  //     Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
+  //   },
+  //   fetch: async (url, options) => {
+  //     if (url === "https://api.vultrinference.com/v1/chat")
+  //       url += "/completions";
+  //     console.log("URL", url);
+  //     console.log("Headers", JSON.stringify(options!.headers, null, 2));
+  //     console.log(
+  //       `Body ${JSON.stringify(JSON.parse(options!.body! as string), null, 2)}`
+  //     );
+  //     const res = await fetch(url, options);
+  //     console.log("Response", res);
+  //     const data = await res.json();
+  //     console.log("Data", data);
+  //     console.log("Message", data.choices[0].message.content);
+  //     return res;
+  //   },
+  // });
 
   const result = await streamText({
-    model: ollama("llama-3.1-70b-instruct-fp8-gh200"), //groq("llama3-8b-8192"), ,
+    model: groq("llama3-8b-8192"),
     system:
-      "You are an AI assistant that can create and retrieve student information from a database and answer questions about them.",
-    messages: [...aiState.get(), { role: "user", content: input }],
-    // temperature: 0,
-    // tools: {
-    //   createStudentTool,
-    //   getStudentTool,
-    //   enrollStudentTool,
-    //   getEnrolledStudentsTool,
-    //   getClassTool,
-    // },
+      "You are an AI assistant that retrieves student information from a database and answers questions about them.",
+    messages: [...aiState.get()],
+    temperature: 0.2,
+    tools: {
+      getStudentTool,
+    },
     toolChoice: "auto",
-    maxSteps: 1,
   });
+  console.log("Result", result);
   let textContent = "";
   for await (const delta of result.fullStream) {
+    console.log("Delta", delta);
     const { type } = delta;
     if (type === "text-delta") {
       const { textDelta } = delta;
@@ -131,170 +141,28 @@ export const AI = createAI<ServerMessage[], ClientMessage[]>({
   initialUIState: [],
 });
 
-const createStudentTool = tool({
-  description:
-    "Create a new student with various biographical information. You must provide a first and last name.",
-  parameters: z.object({
-    nameFirst: z.string().describe("The first name of the student"),
-    nameLast: z.string().describe("The last name of the student"),
-    email: z.string().optional().describe("The email of the student"),
-    phoneNumber: z
-      .string()
-      .optional()
-      .describe("The phone number of the student in (123) 456-7890 format"),
-    dob: z
-      .string()
-      .optional()
-      .describe("The date of birth of the student in MM/DD/YYYY format"),
-    address: z.string().optional().describe("The address of the student"),
-    graduationYear: z
-      .optional(z.string())
-      .describe("The graduation year of the student"),
-  }),
-  execute: async ({
-    nameFirst,
-    nameLast,
-    email,
-    phoneNumber,
-    dob,
-    address,
-    graduationYear,
-  }) => {
-    const student = await studentLayout.create({
-      fieldData: {
-        nameFirst,
-        nameLast,
-        email,
-        phoneNumber,
-        dob,
-        address,
-        graduationYear,
-      },
-    });
-    return student;
-  },
-});
-
 const getStudentTool = tool({
   description:
-    "Get data about students based on their information. Can also return the count of students that match the query.",
+    "Get data about students based on their information. Returns student data.",
   parameters: z.object({
-    nameFirst: z.string().optional().describe("The first name of the student"),
-    nameLast: z.string().optional().describe("The last name of the student"),
-    email: z.string().optional().describe("The email of the student"),
-    phoneNumber: z
-      .string()
-      .optional()
-      .describe("The phone number of the student in (123) 456-7890 format"),
-    dob: z
-      .string()
-      .optional()
-      .describe("The date of birth of the student in MM/DD/YYYY format"),
-    address: z.string().optional().describe("The address of the student"),
-    graduationYear: z
-      .string()
-      .optional()
-      .describe("The graduation year of the student"),
+    studentName: z.string().describe("The name of the student"),
   }),
-  execute: async ({
-    nameFirst,
-    nameLast,
-    email,
-    phoneNumber,
-    dob,
-    address,
-    graduationYear,
-  }) => {
-    const student = await studentLayout.find({
-      query: {
-        nameFirst,
-        nameLast,
-        email,
-        phoneNumber,
-        dob,
-        address,
-        graduationYear,
-      },
-    });
-    if (student) {
-      return {
-        foundCount: student.dataInfo.foundCount,
-        data: student.data,
-      };
-    }
+  execute: async ({ studentName }) => {
+    console.log("Student name", studentName);
+    // const student = await StudentLayout.findFirst({
+    //   query: {
+    //     studentName,
+    //   },
+    // });
+    // console.log("Student", student);
+    // if (student) {
+    //   return {
+    //     foundCount: student.dataInfo.foundCount,
+    //     data: student.data,
+    //   };
+    // }
+    return { parentNames: ["John Doe", "Jane Doe"] };
     return "Error";
   },
 });
 
-const enrollStudentTool = tool({
-  description: "Enroll a student in a course",
-  parameters: z.object({
-    nameFirst: z.string().describe("The first name of the student"),
-    nameLast: z.string().describe("The last name of the student"),
-    className: z
-      .string()
-      .describe("The name of the class to enroll the student in"),
-  }),
-  execute: async ({ nameFirst, nameLast, className }) => {
-    try {
-      const student = await studentLayout.findFirst({
-        query: {
-          nameFirst,
-          nameLast,
-        },
-        ignoreEmptyResult: true,
-      });
-      if (!student.data) {
-        return "Error: Student not found. Maybe they haven't been created yet?";
-      }
-      console.log("Student found", student.data);
-      const classData = await classLayout.findFirst({
-        query: {
-          name: className,
-        },
-        ignoreEmptyResult: true,
-      });
-      if (!classData.data) {
-        return "Error: Class not found";
-      }
-      console.log("Class found", classData.data);
-      const enrollment = await studentClassLayout.create({
-        fieldData: {
-          _class_id: classData.data.fieldData.__id,
-          _student_id: student.data.fieldData.__id,
-        },
-      });
-
-      return "Successfully enrolled student in class";
-    } catch (error) {
-      console.error("Error enrolling student in class", error);
-      return "Error: Failed to enroll student in class";
-    }
-  },
-});
-
-const getEnrolledStudentsTool = tool({
-  description: "Get the students enrolled in a class",
-  parameters: z.object({
-    className: z
-      .string()
-      .describe("The name of the class to get enrolled students for"),
-  }),
-  execute: async ({ className }) => {
-    const students = await studentClassLayout.find({
-      query: {
-        "Class::name": className,
-      },
-    });
-    return { foundCount: students.dataInfo.foundCount, data: students.data };
-  },
-});
-
-const getClassTool = tool({
-  description: "Get available classes",
-  parameters: z.object({}),
-  execute: async () => {
-    const classes = await classLayout.list();
-    return { foundCount: classes.dataInfo.foundCount, data: classes.data };
-  },
-});

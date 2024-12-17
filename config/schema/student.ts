@@ -37,6 +37,7 @@
       "student_ext::_studentJSON.Med": z.string(),
       "student_ext::_update.studentAcademicHistory": z.string(),
       "student_ext::_update.studentMed": z.string(),
+      "studentYear::AiCourseNameJSON": z.string(),
   });
 
   export type TStudent = z.infer<typeof ZStudent>;
