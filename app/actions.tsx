@@ -7,13 +7,13 @@ import {
   getMutableAIState,
   streamUI,
 } from "ai/rsc";
-import { createOllama } from "ollama-ai-provider";
+import { createOllama, ollama } from "ollama-ai-provider";
 import { ReactNode } from "react";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { groq } from "@ai-sdk/groq";
 import { StudentLayout } from "@/config/schema/client/index";
-import { streamText, tool } from "ai";
+import { streamText, generateText, tool } from "ai";
 
 export interface ServerMessage {
   role: "user" | "assistant";
@@ -44,19 +44,18 @@ export async function continueConversation(
 
   const messageStream = createStreamableUI(null);
 
-  const ollama = createOllama({
-    baseURL: "https://api.vultrinference.com/v1/",
-    headers: {
-      Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
-    },
-  });
+  // const ollama = createOllama({
+  //   baseURL: "https://api.vultrinference.com/v1/",
+  //   headers: {
+  //     Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
+  //   },
+  // });
 
-  const result = await streamText({
-    model: ollama("smollm2:latest"), //groq("llama3-8b-8192"),
+  const result = await generateText({
+    model: ollama("llama3.2:latest"), //groq("llama3-8b-8192"),
     system:
       "You are an AI assistant that can create and retrieve student information from a database and answer questions about them.",
-    messages: [...aiState.get(), { role: "user", content: input }],
-    temperature: 0,
+    messages: [...aiState.get()],
     tools: {
       getStudentTool,
     },
@@ -64,26 +63,10 @@ export async function continueConversation(
     maxSteps: 10,
   });
   let textContent = "";
-  for await (const delta of result.fullStream) {
-    const { type } = delta;
-    if (type === "text-delta") {
-      const { textDelta } = delta;
-      textContent += textDelta;
-      messageStream.update(<div>{textContent}</div>);
+  const message = result.text;
 
-      aiState.update([
-        ...aiState.get(),
-        {
-          id: nanoid(),
-          role: "assistant",
-          content: textContent,
-        },
-      ]);
-    } else if (type === "tool-call") {
-      const { toolName, args } = delta;
-      console.log("Tool call", toolName, args);
-    }
-  }
+  messageStream.update(<div>{message}</div>);
+
   messageStream.done();
   return {
     id: nanoid(),
