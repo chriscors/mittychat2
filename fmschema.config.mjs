@@ -5,7 +5,10 @@ export const config = {
   clientSuffix: "Layout",
   schemas: [
     // add your layouts and name schemas here
-    { layout: "student", schemaName: "student" },
+    // { layout: "student", schemaName: "student" },
+    // { layout: "studentClass", schemaName: "studentClass" },
+    // { layout: "class", schemaName: "class" },
+    { layout: "api.Student", schemaName: "Student" },
 
     // repeat as needed for each schema...
     // { layout: "my_other_layout", schemaName: "MyOtherSchema" },

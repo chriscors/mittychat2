@@ -1,1 +1,1 @@
-  export { client as studentLayout } from "./student";
+  export { client as StudentLayout } from "./Student";
