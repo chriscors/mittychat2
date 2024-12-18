@@ -9,6 +9,14 @@ export const config = {
     // { layout: "studentClass", schemaName: "studentClass" },
     // { layout: "class", schemaName: "class" },
     { layout: "api.Student", schemaName: "Student" },
+    {
+      layout: "api.Student.academicHistory",
+      schemaName: "StudentAcademicHistory",
+    },
+    {
+      layout: "api.Student.familialRelationships",
+      schemaName: "StudentFamilialRelationship",
+    },
 
     // repeat as needed for each schema...
     // { layout: "my_other_layout", schemaName: "MyOtherSchema" },
